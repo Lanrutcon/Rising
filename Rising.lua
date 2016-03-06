@@ -1,18 +1,18 @@
 local Addon = CreateFrame("FRAME");
 local risingMenu;
 
--------------------------
---Help
---Options
---Interface
---KeyBindings
---AddOns
---Macros
---Logout
---Exit Game
---Return to Game
--------------------------
 
+-------------------------------------
+--
+-- Creates a Frame with a FontString inside
+-- 
+-- @param #String name: frame's name
+-- @param #frame parent: parent's frame
+-- @param #int posX: horizontal pixels relative to parent
+-- @param #int posY: vertical pixels to parent
+-- @return #frame fontFrame : frame with the fontString
+--
+-------------------------------------
 local function createFontFrame(name, parent, posX, posY, onClick)
 	local fontFrame = CreateFrame("FRAME", "Rising" .. name, parent);
 	fontFrame:SetSize(200,50);
@@ -35,6 +35,12 @@ local function createFontFrame(name, parent, posX, posY, onClick)
 	return fontFrame;
 end
 
+
+-------------------------------------
+--
+-- Creates a smoke effect with the help of PlayerModel
+--
+-------------------------------------
 local function createSmokeEffect()
 
 	if not risingMenu.smokeFX then
@@ -59,10 +65,20 @@ local function createSmokeEffect()
 	
 end
 
+
+-------------------------------------
+--
+-- Toggles the visibility of the main frame, risingMenu.
+--
+-------------------------------------
 local function toggleRisingMenu()
 	if risingMenu:IsShown() or risingMenu:GetAlpha() > 0 then
 		UIFrameFadeOut(risingMenu, risingMenu:GetAlpha(), risingMenu:GetAlpha(), 0);
 		UIFrameFadeIn(UIParent, UIParent:GetAlpha(), UIParent:GetAlpha(), 1);
+		
+		--this will give the keyboard to the game right away
+		risingMenu:SetScript("OnKeyDown", nil);
+		risingMenu:EnableKeyboard(false);
 		
 		--check out the comment in else condition
 		Minimap:Show();
@@ -83,14 +99,28 @@ local function toggleRisingMenu()
 		--Only with Minimap:Hide() those pins disappear
 		Minimap:SetScript("OnUpdate", function(self)
 			if UIParent:GetAlpha() < 0.1 then
-				Minimap:SetScript("OnUpdate", nil);
-				Minimap:Hide();
+				self:SetScript("OnUpdate", nil);
+				self:Hide();
 			end
 		end);
 	end
 end
 
 
+-------------------------------------
+--
+-- Creates the following buttons:
+-- Help
+-- Options
+-- Interface
+-- KeyBindings
+-- AddOns
+-- Macros
+-- Logout
+-- Exit Game
+-- Return to Game
+-- 
+-------------------------------------
 local function createGameOptions()
 	risingMenu.help 		= createFontFrame("Help", 			risingMenu, -15, 0, function() toggleRisingMenu() MainMenuMicroButton:Click() GameMenuButtonHelp:Click() end);
 	risingMenu.options 		= createFontFrame("Options", 		risingMenu, -15, -40, function() toggleRisingMenu() MainMenuMicroButton:Click() GameMenuButtonOptions:Click() end);
@@ -104,8 +134,11 @@ local function createGameOptions()
 end
 
 
-
-
+-------------------------------------
+--
+-- Initialize mainFrame, risingMenu.
+--
+-------------------------------------
 local function initRising()
 	risingMenu = CreateFrame("FRAME", "Rising", WorldFrame);
 	risingMenu:SetSize(GetScreenWidth(), GetScreenHeight());
@@ -128,25 +161,29 @@ local function initRising()
 			end
 		end);
 	end);
-	risingMenu:SetScript("OnHide", function(self)
-		self:SetScript("OnKeyDown", nil);
-		self:EnableKeyboard(false);
-	end);
 end
 
 
-
-
+-------------------------------------
+--
+-- Addon SetScript OnEvent
+-- SetUps risingMenu and changes GameMenuFrame's script "OnShow".
+--
+-- Handled events:
+-- "PLAYER_ENTERING_WORLD"
+--
+-------------------------------------
 Addon:SetScript("OnEvent", function(self, event, ...)
 	initRising();
 	createGameOptions();
 	createSmokeEffect();
+	GameMenuFrame:SetScript("OnShow", function(self)
+		toggleRisingMenu();
+		GameMenuButtonContinue:Click();
+	end);
+	Addon:UnregisterAllEvents();
 end);
 
 Addon:RegisterEvent("PLAYER_ENTERING_WORLD");
 
-GameMenuFrame:SetScript("OnShow", function(self)
-	toggleRisingMenu();
-	GameMenuButtonContinue:Click();
-end);
 
